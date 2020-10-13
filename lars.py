@@ -4,8 +4,8 @@ from torch.optim.optimizer import Optimizer, required
 # Large Batch Training of Convolutional Networks
 # https://arxiv.org/abs/1708.03888
 class LARS(Optimizer):
-  def __init__(self, params, lr = required, momentum = 0.0, dampening = 0,
-      weight_decay = 1e-4, nesterov = False, eta = 1e-5, epsilon = 1e-3,
+  def __init__(self, params, lr = required, momentum = 0.1, dampening = 0.2,
+      weight_decay = 1e-4, nesterov = False, eta = 1e-3, epsilon = 1e-3,
       max_epoch = 90):
     self.lr = lr
     self.eta = eta
@@ -52,7 +52,7 @@ class LARS(Optimizer):
             buffer = param_state['momentum_buffer'] = torch.clone(d_p).detach()
           else:
             buffer = param_state['momentum_buffer']
-            buffer.mul_(momentum).add_(d_p, 1 - dampening)
+          buffer.mul_(momentum).add_(1 - dampening, d_p)
           if nesterov:
             d_p = d_p.add(buffer, momentum)
           else:
