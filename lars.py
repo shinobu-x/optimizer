@@ -35,17 +35,17 @@ class LARS(Optimizer):
       for p in group['params']:
         if p.grad is None:
           continue
-        d_p = p.grad.data
+        d_p = p.grad
         weight_norm = torch.norm(p.data)
-        gradient_norm = torch.norm(d_p)
+        gradient_norm = torch.norm(d_p.data)
         # Compute the global learning rate with polynomial decay
-        global_lr = lr * (1- float(epoch) / self.max_epoch) ** 2
+        global_lr = lr * (1 - float(epoch) / self.max_epoch) ** 2
         # Compute the local learning rate
         local_lr = min(self.eta * weight_norm / \
             (gradient_norm + weight_norm * weight_decay + self.epsilon), 1.0) \
             if weight_norm * gradient_norm > 0 else 1.0
         if weight_decay != 0.0:
-          d_p.add_(weight_decay, p.data)
+          d_p = d_p.add(weight_decay, p)
         if momentum != 0.0:
           param_state = self.state[p]
           if 'momentum_buffer' not in param_state:
