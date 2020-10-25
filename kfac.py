@@ -42,7 +42,7 @@ class KFAC(Optimizer):
                 else:
                     split_bias(child)
         split_bias(model)
-        super(KFACOptimizer, self).__init__(model.parameters(), defaults)
+        super(KFAC, self).__init__(model.parameters(), defaults)
         self.device = torch.device('cuda' if torch.cuda.is_available()
                 else 'cpu')
         self.model = model
