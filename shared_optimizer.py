@@ -17,9 +17,9 @@ class SharedAdam(Adam):
         for group in self.param_groups:
             for p in group['params']:
                 state = self.state[p]
-                state['step'].share_memory()
-                state['exp_avg'].share_memory()
-                state['exp_avg_sq'].share_memory()
+                state['step'].share_memory_()
+                state['exp_avg'].share_memory_()
+                state['exp_avg_sq'].share_memory_()
 
     def step(self, closure = None):
         loss = None
@@ -47,3 +47,35 @@ class SharedAdam(Adam):
                     p.data.addcdiv_(-step_size, exp_avg, denom)
         return loss
 
+class SharedRMSprop(RMSprop):
+    def __init__(self, params, lr = 1e-3, alpha = 0.99, eps = 1e-8,
+            weight_decay = 0.0, momentum = 0.0, centered = False):
+        super(SharedRMSprop, self).__init__(params, lr = lr, alpha = alpha,
+                eps = eps, weight_decay = weight_decay, momentum = momentum,
+                centered = centered)
+
+    def share_memory(self):
+        for group in self.param_groups:
+            for p in group['params']:
+                state = self.state[p]
+                state['step'].share_memory_()
+                state['square_avg'].share_memory_()
+
+    def step(self, closure = None):
+        loss = None
+        if closure is not None:
+            loss = closure()
+        for group in self.param_groups:
+            for p in group['params']:
+                if p.grad is None:
+                    continue
+                grad = p.grad.data
+                state = self.state[p]
+                square_avg = state['square_avg']
+                alpha = group['alpha']
+                state['step'] += 1
+                if group['weight_decay'] != 0:
+                    grad = grad.add(group['weight_decay'], p.data)
+                    avg = square_avg.mul_(alpha).addcmul_(1 - alpha, grad, grad)
+                    p.data.addcdiv_(-group['lr'], grad, avg)
+        return loss
